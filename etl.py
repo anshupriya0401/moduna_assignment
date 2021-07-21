@@ -18,8 +18,8 @@ cur = conn.cursor()
 
 # Create and load gdp_source     
 cur.execute("""
-            DROP TABLE IF EXISTS moduna.gdp_source CASCADE;
-            CREATE TABLE moduna.gdp_source(
+            DROP TABLE IF EXISTS mudano.gdp_source CASCADE;
+            CREATE TABLE mudano.gdp_source(
                 indicator_code          character varying(30) NOT NULL PRIMARY KEY,
                 indicator_name          character varying(50),
                 source_note             text,
@@ -30,7 +30,7 @@ with open('Metadata_Indicator_API_NY.GDP.MKTP.CD_DS2_en_csv_v2_2593330.csv','r')
     reader = csv.reader(f)
     next(reader) # Skip the header row.
     for row in reader:
-        cur.execute("INSERT INTO moduna.gdp_source VALUES (%s, %s, %s, %s)", [row[0],row[1],row[2],row[3]]
+        cur.execute("INSERT INTO mudano.gdp_source VALUES (%s, %s, %s, %s)", [row[0],row[1],row[2],row[3]]
     )
 
 conn.commit()
@@ -41,8 +41,8 @@ print("Finished loading table: GDP_SOURCE")
 
 # Create and Load data to country_detail_stg
 cur.execute("""
-            DROP TABLE IF EXISTS moduna.country_detail_stg CASCADE;
-            CREATE TABLE moduna.country_detail_stg(
+            DROP TABLE IF EXISTS mudano.country_detail_stg CASCADE;
+            CREATE TABLE mudano.country_detail_stg(
                 country_code      character varying(3) NOT NULL PRIMARY KEY,
                 country_name      character varying(60),
                 region            character varying(40),
@@ -55,7 +55,7 @@ with open('Metadata_Country_API_NY.GDP.MKTP.CD_DS2_en_csv_v2_2593330.csv', 'r') 
     reader = csv.reader(f)
     next(reader) # Skip the header row.
     for row in reader:
-        cur.execute("INSERT INTO moduna.country_detail_stg VALUES (%s, %s, %s, %s, %s)", [row[0],row[4],row[1],row[2],row[3]]
+        cur.execute("INSERT INTO mudano.country_detail_stg VALUES (%s, %s, %s, %s, %s)", [row[0],row[4],row[1],row[2],row[3]]
     )
 
 conn.commit()
@@ -65,8 +65,8 @@ conn.commit()
 # Discard records with invalid country name 
     
 cur.execute("""
-            DROP TABLE IF EXISTS moduna.country_detail CASCADE;
-            CREATE TABLE moduna.country_detail(
+            DROP TABLE IF EXISTS mudano.country_detail CASCADE;
+            CREATE TABLE mudano.country_detail(
                 country_code      character varying(3) NOT NULL PRIMARY KEY,
                 country_name      character varying(60),
                 region            character varying(40),
@@ -74,8 +74,8 @@ cur.execute("""
                 special_notes     text
             );
             
-            INSERT INTO moduna.country_detail 
-            SELECT * FROM moduna.country_detail_stg WHERE country_name not in 
+            INSERT INTO mudano.country_detail 
+            SELECT * FROM mudano.country_detail_stg WHERE country_name not in 
                 ('Africa Eastern and Southern','Africa Western and Central','Arab World','Bermuda','British Virgin Islands',
                  'Caribbean small states','Cayman Islands','Central Europe and the Baltics','Channel Islands','Congo, Rep.',
                  'Early-demographic dividend','East Asia & Pacific','East Asia & Pacific (excluding high income)',
@@ -102,8 +102,8 @@ print("Finished loading table: COUNTRY_DETAIL")
 # Create and loable to store GDP data
 
 cur.execute("""
-            DROP TABLE IF EXISTS moduna.country_gdp_stg;
-            CREATE TABLE moduna.country_gdp_stg(
+            DROP TABLE IF EXISTS mudano.country_gdp_stg;
+            CREATE TABLE mudano.country_gdp_stg(
                 country_code          character varying(3),
                 indicator_code        character varying(30),
                 year                  character(4),
@@ -121,7 +121,7 @@ with open('API_NY.GDP.MKTP.CD_DS2_en_csv_v2_2593330.csv','r') as f:
         for x in range(1960, 2020):
             if (row[x-1956] != ''):
                 cur.execute("""
-                            INSERT INTO moduna.country_gdp_stg (country_code,indicator_code,year,gdp) 
+                            INSERT INTO mudano.country_gdp_stg (country_code,indicator_code,year,gdp) 
                             VALUES (%s, %s, %s, %s);
                             """,[row[1],row[3],x,row[x-1956]]
                             )
@@ -129,15 +129,15 @@ conn.commit()
 
 
 cur.execute("""               
-            DROP TABLE IF EXISTS moduna.country_gdp CASCADE;
-            CREATE TABLE moduna.country_gdp(
+            DROP TABLE IF EXISTS mudano.country_gdp CASCADE;
+            CREATE TABLE mudano.country_gdp(
                 id                    serial PRIMARY KEY,
                 country_code          character varying(3) NOT NULL,
                 indicator_code        character varying(30) NOT NULL,
                 year                  character(4),
                 gdp                   numeric(20,4),
-                CONSTRAINT code_fk1 FOREIGN KEY(country_code) REFERENCES moduna.country_detail(country_code),
-                CONSTRAINT code_fk2 FOREIGN KEY(indicator_code) REFERENCES moduna.gdp_source(indicator_code)
+                CONSTRAINT code_fk1 FOREIGN KEY(country_code) REFERENCES mudano.country_detail(country_code),
+                CONSTRAINT code_fk2 FOREIGN KEY(indicator_code) REFERENCES mudano.gdp_source(indicator_code)
                 );
            
             """
@@ -146,12 +146,12 @@ cur.execute("""
 conn.commit()
 
 cur.execute("""
-            INSERT INTO moduna.country_gdp (country_code,indicator_code,year,gdp) 
+            INSERT INTO mudano.country_gdp (country_code,indicator_code,year,gdp) 
             SELECT a.country_code,a.indicator_code,a.year,a.gdp 
             FROM 
-            moduna.country_gdp_stg a 
+            mudano.country_gdp_stg a 
             LEFT JOIN 
-            moduna.country_detail b 
+            mudano.country_detail b 
             ON a.country_code = b.country_code WHERE b.country_code IS NOT NULL;
             """
             )
@@ -166,8 +166,8 @@ print("Finished loading table: COUNTRY_GDP")
 response = requests.get("http://api.worldbank.org/v2/country/?format=json")
 
 cur.execute("""
-            DROP TABLE IF EXISTS moduna.country_list_stg;
-            CREATE TABLE moduna.country_list_stg(
+            DROP TABLE IF EXISTS mudano.country_list_stg;
+            CREATE TABLE mudano.country_list_stg(
                 country_code              character varying(3),
                 country_name              character varying(60),
                 country_iso2code          character(2),
@@ -213,15 +213,15 @@ for country_info in api_result[1]:
         ]   
     
     cur.execute("""
-                INSERT INTO moduna.country_list_stg VALUES 
+                INSERT INTO mudano.country_list_stg VALUES 
                 (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
                 """, country_list)    
                
 conn.commit()
 
 cur.execute("""
-            DROP TABLE IF EXISTS moduna.country_list;
-            CREATE TABLE moduna.country_list(
+            DROP TABLE IF EXISTS mudano.country_list;
+            CREATE TABLE mudano.country_list(
                 country_code              character varying(3),
                 country_name              character varying(60),
                 country_iso2code          character(2),
@@ -240,17 +240,17 @@ cur.execute("""
                 capital_city              character varying(100),
                 longitude                 character varying(30),
                 latitude                  character varying(30),
-                CONSTRAINT country_list_fk1 FOREIGN KEY(country_code) REFERENCES moduna.country_detail(country_code)   
+                CONSTRAINT country_list_fk1 FOREIGN KEY(country_code) REFERENCES mudano.country_detail(country_code)   
                 );"""
             )
 
 
 cur.execute("""
-            INSERT INTO moduna.country_list 
+            INSERT INTO mudano.country_list 
             SELECT a.* FROM 
-            moduna.country_list_stg a 
+            mudano.country_list_stg a 
             LEFT JOIN 
-            moduna.country_detail b 
+            mudano.country_detail b 
             ON a.country_code = b.country_code WHERE b.country_code IS NOT NULL;
             """
             )

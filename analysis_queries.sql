@@ -1,16 +1,16 @@
 -- Query Analysis 1 (Countries with income level 'UPPER MIDDLE INCOME')
-SELECT DISTINCT country_name FROM moduna.country_detail 
+SELECT DISTINCT country_name FROM mudano.country_detail 
 WHERE UPPER(income_group)='UPPER MIDDLE INCOME'
 ORDER BY country_name ASC;
 
 -- Query Analysis 2 (Countries with income level 'LOW INCOME' per region)
 SELECT DISTINCT region, country_name
-FROM moduna.country_detail WHERE UPPER(income_group)='LOW INCOME' AND region != '' 
+FROM mudano.country_detail WHERE UPPER(income_group)='LOW INCOME' AND region != '' 
 ORDER BY region, country_name ASC;
 
 -- Query Analysis 3 (Region with highest proportion of 'HIGH INCOME' countries)
 SELECT region,count(*) AS proportion 
-FROM moduna.country_detail 
+FROM mudano.country_detail 
 WHERE UPPER(income_group)='HIGH INCOME' 
 GROUP BY region
 ORDER BY proportion DESC LIMIT 1;
@@ -23,18 +23,18 @@ SELECT t1.region, t2.income_group, t2.country_name, t2.gdp_country, t1.cummulati
 FROM
 (SELECT b.region,SUM(a.gdp) AS cummulative_gdp_region
 FROM 
-moduna.country_gdp a
+mudano.country_gdp a
 LEFT JOIN
-moduna.country_detail b
+mudano.country_detail b
 ON a.country_code=b.country_code
 WHERE a.year='2017' AND b.region != '' 
 GROUP BY b.region) t1
 LEFT JOIN
 (
 SELECT b.region,b.income_group,b.country_name,a.gdp as gdp_country
-FROM moduna.country_gdp a
+FROM mudano.country_gdp a
 INNER JOIN
-moduna.country_detail b
+mudano.country_detail b
 ON a.country_code = b.country_code
 WHERE b.region != '' AND b.income_group != '' AND a.year='2017'
 ORDER BY 
@@ -54,9 +54,9 @@ a.year,
 a.gdp,
 ROUND(((a.gdp - LAG(a.gdp,1) OVER (PARTITION BY a.country_code ORDER BY a.year asc)) *100 )
 /LAG(a.gdp, 1) OVER (PARTITION BY a.country_code ORDER BY a.year asc),2) AS pct_change
-FROM moduna.country_gdp a
+FROM mudano.country_gdp a
 INNER JOIN 
-moduna.country_detail b
+mudano.country_detail b
 ON a.country_code = b.country_code
 ORDER BY b.country_name, a.year;
 
@@ -68,9 +68,9 @@ FROM
 (
 SELECT b.region, b.country_name, a.gdp,RANK() OVER (PARTITION BY b.region ORDER BY a.gdp ASC) as gdp_rank
 FROM 
-moduna.country_gdp a
+mudano.country_gdp a
 LEFT JOIN
-moduna.country_detail b
+mudano.country_detail b
 ON a.country_code = b.country_code
 WHERE year='2017' AND b.region != ''
 ) t1
